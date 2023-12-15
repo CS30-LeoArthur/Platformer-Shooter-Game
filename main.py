@@ -3,8 +3,10 @@ import pygame
 # Define Colors
 GREY = (128, 128, 128)
 RED = (255, 0, 0)
+YELLOW = (220, 230, 20)
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
+LIGHTBLUE = (102, 255, 255)
 SCREENWIDTH = 800
 SCREENHEIGHT = 800
 
@@ -33,26 +35,43 @@ class Player():
             self.yChange = -7
             self.jumpCount = 0
 
-    def go_left(self):
+    def goLeft(self):
         self.xChange = -3
     
-    def go_right(self):
+    def goRight(self):
         self.xChange = 3
 
-    def hzstop(self):
+    def hzStop(self):
         self.xChange = 0
-    
-    def startFall(self):
-        self.change_y = -0.1
 
-    def update(self):
+    def vtDefault(self):
+        self.yChange = 0.1
+    
+    def checkVerticalPlatformCollision(self, platforms):
+        PlatformIndex = checkCollision(platforms, self)
+        if PlatformIndex != -1:
+            self.jumpCount += 1
+            if self.yChange > 0:
+                self.vtDefault()
+                self.y = platforms[PlatformIndex].y - self.height
+            elif self.yChange < 0:
+                self.vtDefault()
+                self.y = platforms[PlatformIndex].y + platforms[PlatformIndex].height
+    
+    def checkHorizontalPlatformCollision(self, platforms):
+        PlatformIndex = checkCollision(platforms, self)
+        if PlatformIndex != -1:
+            if self.xChange > 0:
+                self.x = platforms[PlatformIndex].x - self.width
+            elif self.xChange < 0:
+                self.x = platforms[PlatformIndex].x + platforms[PlatformIndex].width
+
+    def update(self, platforms):
         self.yChange = min(5, self.yChange + 0.2)
         self.x += self.xChange
+        self.checkHorizontalPlatformCollision(platforms)
         self.y += self.yChange
-
-    
-    def drawPlayer(self, screen):
-        pygame.draw.rect(screen, RED, [self.x, self.y, self.width, self.height])
+        self.checkVerticalPlatformCollision(platforms)
 
 class Platform():
     def __init__(self, x, y, width, height):
@@ -78,24 +97,24 @@ class LevelOne():
         self.platforms.append(Platform(250, self.groundY - 200, 150, 20))
         self.platforms.append(Platform(300, self.groundY - 300, 150, 20))
         self.platforms.append(Platform(350, self.groundY - 400, 150, 20))
-
-    def checkVerticalPlatformCollision(self):
-        platformIndex = checkCollision(self.platforms, self)
-        if platformIndex != -1:
-            self.player.jump_count += 1
-            if self.change_y > 0:
-                self.player.vt_default()
-                self.player.y = self.platforms[platformIndex].y - self.height
-            elif self.change_y < 0:
-                self.player.startFall()
-                self.player.y = self.platforms[platformIndex].y + self.platforms[platformIndex].height
+    
+    def updatePlayer(self):
+        self.player.update(self.platforms)
+        
+        
     
     def drawHouse(self, screen):
         pygame.draw.rect(screen, BLUE, [500, 400, 300, self.groundY - 400], 10)
         pygame.draw.polygon(screen, GREY, ([500, 400], [650, 300], [800, 400]), 10)
     
+    def drawPlayer(self, screen):
+        pygame.draw.rect(screen, RED, [self.player.x, self.player.y, self.player.width, self.player.height])
+        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width, self.player.y + self.player.height / 2.75, 10, 5])
+        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width + 10, self.player.y, 5, 25])
+        pygame.draw.rect(screen, LIGHTBLUE, [self.player.x + self.player.width + 15, self.player.y + self.player.height / 3.25, 30, 10])
+    
     def drawLevelOne(self, screen):
-        self.player.drawPlayer(screen)
+        self.drawPlayer(screen)
         self.drawHouse(screen)
         
         for i in range(len(self.platforms)):
@@ -112,9 +131,11 @@ def main():
 
     clock = pygame.time.Clock()
     
-    player = Player(50, 730, 20, 20, 0, 0, 0, 0)
+    player = Player(50, 720, 30, 30, 0, 0, 0, 0)
 
     levelOne = LevelOne(player, [], 750, 1600, False)
+
+    levelOne.levelOnePlatforms()
     
     # Loop
     done = False
@@ -122,18 +143,20 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
-            elif event.type == pygame.K_a:
-                player.go_left()
-            elif event.type == pygame.K_d:
-                player.go_right()
-            elif event.type == pygame.K_w:
-                player.jump()
-
-        # Logic
-        levelOne.levelOnePlatforms()
-        levelOne.checkVerticalPlatformCollision()
-        player.update()
+            # Player movement 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    levelOne.player.goLeft()
+                elif event.key == pygame.K_d:
+                    levelOne.player.goRight()
+                elif event.key == pygame.K_w:
+                    levelOne.player.jump()    
+            # Stop player
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
+                    levelOne.player.hzStop()
         
+        levelOne.updatePlayer()
         # Drawing
         screen.fill(WHITE)
 
