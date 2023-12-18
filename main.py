@@ -66,12 +66,23 @@ class Player():
             elif self.xChange < 0:
                 self.x = platforms[PlatformIndex].x + platforms[PlatformIndex].width
 
-    def update(self, platforms):
+    def viewHorizontalEdgeCollision(self, level):
+        if self.view[0] < 0:
+            self.view[0] = 0
+        elif self.view[0] > level.levelWidth - SCREENWIDTH:
+            self.view[0] = level.levelWidth - SCREENWIDTH
+
+    def update(self, platforms, level):
         self.yChange = min(5, self.yChange + 0.2)
         self.x += self.xChange
         self.checkHorizontalPlatformCollision(platforms)
         self.y += self.yChange
         self.checkVerticalPlatformCollision(platforms)
+
+        viewX = self.x - SCREENWIDTH / 2
+        viewY = self.y - SCREENHEIGHT / 2
+        self.view = [viewX, viewY]
+        self.viewHorizontalEdgeCollision(level)
 
 class Platform():
     def __init__(self, x, y, width, height):
@@ -80,45 +91,50 @@ class Platform():
         self.width = width
         self.height = height
     
-    def drawPlatform(self, screen):
-        pygame.draw.rect(screen, GREY, [self.x, self.y, self.width, self.height])
+    def drawPlatform(self, screen, player):
+        pygame.draw.rect(screen, GREY, [self.x - player.view[0] , self.y, self.width, self.height])
 
 class LevelOne():
-    def __init__(self, player, platforms, groundY, groundWidth, complete):
+    def __init__(self, player, platforms, levelY, levelWidth, complete):
         self.player = player
         self.platforms = platforms
-        self.groundY = groundY
-        self.groundWidth = groundWidth
+        self.levelY = levelY
+        self.levelWidth = levelWidth
         self.complete = complete
         
+        
     def levelOnePlatforms(self):
-        self.platforms.append(Platform(0, self.groundY, self.groundWidth, 50))
-        self.platforms.append(Platform(200, self.groundY - 100, 150, 20))
-        self.platforms.append(Platform(250, self.groundY - 200, 150, 20))
-        self.platforms.append(Platform(300, self.groundY - 300, 150, 20))
-        self.platforms.append(Platform(350, self.groundY - 400, 150, 20))
+        self.platforms.append(Platform(0, self.levelY, self.levelWidth, 50))
+        self.platforms.append(Platform(200, self.levelY - 100, 150, 20))
+        
     
-    def updatePlayer(self):
-        self.player.update(self.platforms)
+    def updateLevel(self):
+        self.player.update(self.platforms, self)
         
         
     
     def drawHouse(self, screen):
-        pygame.draw.rect(screen, BLUE, [500, 400, 300, self.groundY - 400], 10)
-        pygame.draw.polygon(screen, GREY, ([500, 400], [650, 300], [800, 400]), 10)
+        offset = self.player.view[0]
+        pygame.draw.rect(screen, BLUE, [500 - offset, 400, 300, self.levelY - 400], 10)
+        pygame.draw.polygon(screen, GREY, ([500 - offset, 400], [650 - offset, 300], [800 - offset, 400]))
     
     def drawPlayer(self, screen):
-        pygame.draw.rect(screen, RED, [self.player.x, self.player.y, self.player.width, self.player.height])
-        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width, self.player.y + self.player.height / 2.75, 10, 5])
-        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width + 10, self.player.y, 5, 25])
-        pygame.draw.rect(screen, LIGHTBLUE, [self.player.x + self.player.width + 15, self.player.y + self.player.height / 3.25, 30, 10])
+        offset = self.player.view[0]
+
+        pygame.draw.rect(screen, RED, [self.player.x - offset, self.player.y, self.player.width, self.player.height])
+        
+        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width - offset, self.player.y + self.player.height / 2.75, 10, 5])
+        
+        pygame.draw.rect(screen, YELLOW, [self.player.x + self.player.width + 10 - offset, self.player.y, 5, 25])
+        
+        pygame.draw.rect(screen, LIGHTBLUE, [self.player.x + self.player.width + 15 - offset, self.player.y + self.player.height / 3.25, 30, 10])
     
     def drawLevelOne(self, screen):
         self.drawPlayer(screen)
         self.drawHouse(screen)
         
         for i in range(len(self.platforms)):
-            self.platforms[i].drawPlatform(screen)
+            self.platforms[i].drawPlatform(screen, self.player)
 
 
 
@@ -156,7 +172,7 @@ def main():
                 if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
                     levelOne.player.hzStop()
         
-        levelOne.updatePlayer()
+        levelOne.updateLevel()
         # Drawing
         screen.fill(WHITE)
 
