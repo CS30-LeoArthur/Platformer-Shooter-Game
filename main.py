@@ -1,5 +1,6 @@
 import pygame
 
+
 # Define Colors
 GREY = (128, 128, 128)
 RED = (255, 0, 0)
@@ -65,14 +66,20 @@ class Player():
                 self.x = platforms[PlatformIndex].x - self.width
             elif self.xChange < 0:
                 self.x = platforms[PlatformIndex].x + platforms[PlatformIndex].width
+    
+    def checkPlayerEdgeCollision(self, level):
+        if self.x < 0:
+            self.x = 0
+        elif self.x > level.levelWidth - self.width:
+            self.x = level.levelWidth - self.width
 
-    def viewHorizontalEdgeCollision(self, level):
+    def viewHorizontalEdge(self, level):
         if self.view[0] < 0:
             self.view[0] = 0
         elif self.view[0] > level.levelWidth - SCREENWIDTH:
             self.view[0] = level.levelWidth - SCREENWIDTH
     
-    def viewVerticalEdgeCollision(self, level):
+    def viewVerticalEdge(self, level):
         if self.view[1] > 0:
             self.view[1] = 0
 
@@ -86,8 +93,10 @@ class Player():
         viewX = self.x - SCREENWIDTH / 2
         viewY = self.y - SCREENHEIGHT / 2
         self.view = [viewX, viewY]
-        self.viewHorizontalEdgeCollision(level)
-        self.viewVerticalEdgeCollision(level)
+        
+        self.checkPlayerEdgeCollision(level)
+        self.viewHorizontalEdge(level)
+        self.viewVerticalEdge(level)
 
 class Platform():
     def __init__(self, x, y, width, height):
@@ -112,7 +121,10 @@ class LevelOne():
         self.platforms.append(Platform(x, y, width, height))
     
     def levelOnePlatforms(self):
+        # Ground
         self.appendNewPlatform(0, self.levelY, self.levelWidth, 50)
+        self.appendNewPlatform(700, 0, self.levelWidth - 700, 800)
+        # Platforms
         self.appendNewPlatform(200, self.levelY - 100, 150, 20)
         self.appendNewPlatform(200, self.levelY - 100, 150, 20)
         self.appendNewPlatform(400, self.levelY - 200, 150, 20)
@@ -122,8 +134,10 @@ class LevelOne():
         self.appendNewPlatform(450, self.levelY - 700, 50, 200)
         self.appendNewPlatform(100, self.levelY - 500, 100, 20)
         self.appendNewPlatform(350, self.levelY - 600, 150, 20)
-        self.appendNewPlatform(600, self.levelY - 700, 20, 20)
-        self.appendNewPlatform(800, 0, 100, 800)
+        self.appendNewPlatform(630, self.levelY - 700, 20, 20)
+        # Border Walls
+        self.appendNewPlatform(0, self.levelY - 1600, 50, 1600)
+        self.appendNewPlatform(self.levelWidth - 50, self.levelY - 1600, 50, 1600)
         
         
     # Update method
@@ -168,7 +182,7 @@ def main():
 
     clock = pygame.time.Clock()
     
-    player = Player(50, 720, 30, 30, 0, 0, 0, 0)
+    player = Player(100, 720, 30, 30, 0, 0, 0, 0)
 
     levelOne = LevelOne(player, [], 750, 1600, False)
 
