@@ -58,6 +58,7 @@ class Player():
             elif self.yChange < 0:
                 self.vtDefault()
                 self.y = platforms[PlatformIndex].y + platforms[PlatformIndex].height
+            
     
     def checkHorizontalPlatformCollision(self, platforms):
         PlatformIndex = checkCollision(platforms, self)
@@ -121,20 +122,26 @@ class LevelOne():
         self.platforms.append(Platform(x, y, width, height))
     
     def levelOnePlatforms(self):
-        # Ground
+        # Ground I think I will need a seperate class for the ground later because I want the player to drop through the platforms but not the ground
         self.appendNewPlatform(0, self.levelY, self.levelWidth, 50)
-        self.appendNewPlatform(700, 0, self.levelWidth - 700, 800)
+        self.appendNewPlatform(700, self.levelY - 750, self.levelWidth - 700, 800)
+        self.appendNewPlatform(0, self.levelY - 1500, 800, 600)
+        self.appendNewPlatform(0, self.levelY - 400, 500, 50)
+        self.appendNewPlatform(0, self.levelY - 700, 300, 50)
+        self.appendNewPlatform(800, self.levelY - 950, 600, 50)
+        self.appendNewPlatform(900, self.levelY - 1150, 650, 50)
+        
         # Platforms
         self.appendNewPlatform(200, self.levelY - 100, 150, 20)
         self.appendNewPlatform(200, self.levelY - 100, 150, 20)
         self.appendNewPlatform(400, self.levelY - 200, 150, 20)
         self.appendNewPlatform(600, self.levelY - 300, 100, 20)
-        self.appendNewPlatform(0, self.levelY - 400, 500, 50)
-        self.appendNewPlatform(0, self.levelY - 700, 300, 50)
         self.appendNewPlatform(450, self.levelY - 700, 50, 200)
         self.appendNewPlatform(100, self.levelY - 500, 100, 20)
         self.appendNewPlatform(350, self.levelY - 600, 150, 20)
-        self.appendNewPlatform(630, self.levelY - 700, 20, 20)
+        self.appendNewPlatform(1400, self.levelY - 850, 100, 20)
+        
+        
         # Border Walls
         self.appendNewPlatform(0, self.levelY - 1600, 50, 1600)
         self.appendNewPlatform(self.levelWidth - 50, self.levelY - 1600, 50, 1600)
@@ -200,7 +207,7 @@ def main():
                     levelOne.player.goLeft()
                 elif event.key == pygame.K_d:
                     levelOne.player.goRight()
-                elif event.key == pygame.K_w:
+                elif event.key == pygame.K_SPACE:
                     levelOne.player.jump()    
             # Stop player
             if event.type == pygame.KEYUP:
