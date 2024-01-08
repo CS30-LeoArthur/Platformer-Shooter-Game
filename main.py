@@ -1,12 +1,22 @@
 import pygame
 
+# To Do List
+# - Work on levels
+# - Player Movement Options
+# - Create a weapon for the player
+# - Power ups
+# - Create Enemy Class
+# - Create Platform Class
+# - Player Health Bar
 
 # Define Colors
 GREY = (128, 128, 128)
 RED = (255, 0, 0)
 YELLOW = (220, 230, 20)
 WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
 LIGHTBLUE = (102, 255, 255)
 SCREENWIDTH = 800
 SCREENHEIGHT = 800
@@ -19,6 +29,28 @@ def checkCollision(object1, object2):
         if rectCollide(object1[i], object2):
             return i
     return -1
+
+# To do
+# - Create Enemy Class
+class Enemy():
+    def __init__(self, x, y, width, height, xChange, yChange, health):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.xChange = xChange
+        self.yChange = yChange
+        self.health = health
+    
+    def goLeft(self):
+        self.xChange = -3
+        
+    def goRight(self):
+        self.xChange = 3
+    
+    def drawEnemy(self, screen, player):
+        pygame.draw.rect(screen, RED, [self.x - player.view[0], self.y - player.view[1], self.width, self.height])
+
 
 class Player():
     def __init__(self, x, y, width, height, xChange, yChange, view, jumpCount, health):
@@ -101,18 +133,27 @@ class Player():
         self.checkPlayerEdgeCollision(level)
         self.viewHorizontalEdge(level)
         self.viewVerticalEdge(level)
+    
+    def drawHealthBar(self, screen):
+        healthBarWidth = 200
+        healthBar = self.health * 2
+        pygame.draw.rect(screen, RED, [0, SCREENHEIGHT - 50, healthBarWidth, 50])
+        pygame.draw.rect(screen, GREEN, [0, SCREENHEIGHT - 50, healthBar, 50])
+        pygame.draw.rect(screen, BLACK, [0, SCREENHEIGHT - 52, healthBarWidth, 52], 2)
 
     def drawPlayer(self, screen):
         offsetX = self.view[0]
         offsetY = self.view[1]
 
-        pygame.draw.rect(screen, RED, [self.x - offsetX, self.y - offsetY, self.width, self.height])
+        pygame.draw.rect(screen, BLUE, [self.x - offsetX, self.y - offsetY, self.width, self.height])
         
         pygame.draw.rect(screen, YELLOW, [self.x + self.width - offsetX, self.y - offsetY + self.height / 2.75, 10, 5])
         
         pygame.draw.rect(screen, YELLOW, [self.x + self.width + 10 - offsetX, self.y - offsetY, 5, 25])
         
         pygame.draw.rect(screen, LIGHTBLUE, [self.x + self.width + 15 - offsetX, self.y - offsetY + self.height / 3.25, 30, 10])
+
+        self.drawHealthBar(screen)
 
 class Platform():
     def __init__(self, x, y, width, height):
@@ -125,9 +166,10 @@ class Platform():
         pygame.draw.rect(screen, GREY, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
 
 class LevelOne():
-    def __init__(self, player, platforms, groundY, levelHeight, levelWidth, complete):
+    def __init__(self, player, platforms, enemies, groundY, levelHeight, levelWidth, complete):
         self.player = player
         self.platforms = platforms
+        self.enemies = enemies
         self.groundY = groundY
         self.levelHeight = levelHeight
         self.levelWidth = levelWidth
@@ -165,6 +207,9 @@ class LevelOne():
         self.appendNewPlatform(0, self.levelHeight, 50, 1600)
         self.appendNewPlatform(self.levelWidth - 50, self.levelHeight, 50, 1600)
         self.appendNewPlatform(0, self.levelHeight, self.levelWidth, 50)
+
+    def levelOneEnemies(self):
+        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15))
         
         
     # Update method
@@ -187,12 +232,15 @@ class LevelOne():
         pygame.draw.rect(screen, BLUE, [150 - offsetX, self.groundY - 1500 - offsetY, 100, 150])
     
     def drawLevelOne(self, screen):
-        self.player.drawPlayer(screen)
         self.drawExit(screen)
         
         for i in range(len(self.platforms)):
             self.platforms[i].drawPlatform(screen, self.player)
+        
+        for i in range(len(self.enemies)):
+            self.enemies[i].drawEnemy(screen, self.player)
 
+        self.player.drawPlayer(screen)
 
 
 
@@ -206,9 +254,10 @@ def main():
     
     player = Player(100, 720, 30, 30, 0, 0, 0, 0, 100)
 
-    levelOne = LevelOne(player, [], 750, -850, 1600, False)
+    levelOne = LevelOne(player, [], [], 750, -850, 1600, False)
 
     levelOne.levelOnePlatforms()
+    levelOne.levelOneEnemies()
     
     # Loop
     done = False
