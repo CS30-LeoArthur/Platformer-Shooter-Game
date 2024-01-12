@@ -30,6 +30,20 @@ def checkCollision(object1, object2):
             return i
     return -1
 
+def mouse_position():
+    pos = pygame.mouse.get_pos()
+    mouse_x = pos[0]
+    mouse_y = pos[1]
+    return mouse_x, mouse_y
+
+def distance_calc(player):
+    run = mouse_position()[0] - player.x
+    rise = mouse_position()[1] - player.y
+    distance = math.sqrt(run**2 + rise**2)
+    dx = player.x + (run * player.radius / distance)
+    dy = player.y + (rise * player.radius / distance)
+    return dx, dy
+
 # To do
 # - Create Enemy Class
 class Enemy():
@@ -47,6 +61,16 @@ class Enemy():
         
     def goRight(self):
         self.xChange = 3
+    
+    # Trying to create a method in the enemy class so that the code is more organized in the player class
+    # def checkCollisionWithPlayer(self, player):
+    #     enemyIndex = checkCollision(self, player)
+    #     if enemyIndex != -1:
+    #         player.health -= 20
+    #         if player.xChange > 0:
+    #             player.x = self.x - player.width
+    #         elif player.xChange < 0:
+    #             player.x = self.x + self.width
     
     def drawEnemy(self, screen, player):
         pygame.draw.rect(screen, RED, [self.x - player.view[0], self.y - player.view[1], self.width, self.height])
@@ -80,6 +104,19 @@ class Player():
 
     def vtDefault(self):
         self.yChange = 0.1
+
+    # Not sure why this doesn't work
+    # def checkEnemyCollision(self, level, enemies):
+    #     level.enemies.checkCollisionWithPlayer(self)
+    
+    def checkEnemyCollision(self, enemies):
+        enemyIndex = checkCollision(enemies, self)
+        if enemyIndex != -1:
+            self.health -= 20
+            if self.xChange > 0:
+                self.x -= 20
+            elif self.xChange < 0:
+                self.x += 20
     
     def checkVerticalPlatformCollision(self, platforms):
         PlatformIndex = checkCollision(platforms, self)
@@ -119,10 +156,11 @@ class Player():
         if self.view[1] < level.levelHeight:
             self.view[1] = level.levelHeight
 
-    def update(self, platforms, level):
+    def update(self, platforms, enemy, level):
         self.yChange = min(5, self.yChange + 0.2)
         self.x += self.xChange
         self.checkHorizontalPlatformCollision(platforms)
+        self.checkEnemyCollision(enemy)
         self.y += self.yChange
         self.checkVerticalPlatformCollision(platforms)
 
@@ -210,11 +248,12 @@ class LevelOne():
 
     def levelOneEnemies(self):
         self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15))
+        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 15))
         
         
     # Update method
     def updateLevel(self):
-        self.player.update(self.platforms, self)
+        self.player.update(self.platforms, self.enemies, self)
         
         
     # Drawing Methods
