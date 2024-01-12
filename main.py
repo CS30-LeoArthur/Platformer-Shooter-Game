@@ -21,6 +21,7 @@ LIGHTBLUE = (102, 255, 255)
 SCREENWIDTH = 800
 SCREENHEIGHT = 800
 
+# Helper Functions
 def rectCollide(rect1, rect2):
     return rect1.x < rect2.x + rect2.width and rect1.y < rect2.y + rect2.height and rect1.x + rect1.width > rect2.x and rect1.y + rect1.height > rect2.y
 
@@ -62,16 +63,6 @@ class Enemy():
     def goRight(self):
         self.xChange = 3
     
-    # Trying to create a method in the enemy class so that the code is more organized in the player class
-    # def checkCollisionWithPlayer(self, player):
-    #     enemyIndex = checkCollision(self, player)
-    #     if enemyIndex != -1:
-    #         player.health -= 20
-    #         if player.xChange > 0:
-    #             player.x = self.x - player.width
-    #         elif player.xChange < 0:
-    #             player.x = self.x + self.width
-    
     def drawEnemy(self, screen, player):
         pygame.draw.rect(screen, RED, [self.x - player.view[0], self.y - player.view[1], self.width, self.height])
 
@@ -104,10 +95,6 @@ class Player():
 
     def vtDefault(self):
         self.yChange = 0.1
-
-    # Not sure why this doesn't work
-    # def checkEnemyCollision(self, level, enemies):
-    #     level.enemies.checkCollisionWithPlayer(self)
     
     def checkEnemyCollision(self, enemies):
         enemyIndex = checkCollision(enemies, self)
@@ -179,6 +166,11 @@ class Player():
         pygame.draw.rect(screen, GREEN, [0, SCREENHEIGHT - 50, healthBar, 50])
         pygame.draw.rect(screen, BLACK, [0, SCREENHEIGHT - 52, healthBarWidth, 52], 2)
 
+    def resetPlayerLevelOne(self):
+        self.x = 100
+        self.y = 720
+        self.health = 100
+
     def drawPlayer(self, screen):
         offsetX = self.view[0]
         offsetY = self.view[1]
@@ -203,20 +195,21 @@ class Platform():
     def drawPlatform(self, screen, player):
         pygame.draw.rect(screen, GREY, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
 
-class LevelOne():
-    def __init__(self, player, platforms, enemies, groundY, levelHeight, levelWidth, complete):
+class Level():
+    def __init__(self, player, platforms, enemies, groundY, levelHeight, levelWidth, levelNumber):
         self.player = player
         self.platforms = platforms
         self.enemies = enemies
         self.groundY = groundY
         self.levelHeight = levelHeight
         self.levelWidth = levelWidth
-        self.complete = complete
+        self.levelNumber = levelNumber
         
     # A method i can use to append new platforms quickly
     def appendNewPlatform(self, x, y, width, height):
         self.platforms.append(Platform(x, y, width, height))
     
+    # Platforms
     def levelOnePlatforms(self):
         # Ground I think I will need a seperate class for the ground later because I want the player to drop through the platforms but not the ground
         self.appendNewPlatform(0, self.groundY, self.levelWidth, 50)
@@ -246,13 +239,43 @@ class LevelOne():
         self.appendNewPlatform(self.levelWidth - 50, self.levelHeight, 50, 1600)
         self.appendNewPlatform(0, self.levelHeight, self.levelWidth, 50)
 
+    def levelTwoPlatforms(self):
+        self.appendNewPlatform(0, self.groundY, self.levelWidth, 50)
+
+    # Enemies
     def levelOneEnemies(self):
         self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15))
         self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 15))
+    
+    def restartLevel(self):
+        if self.levelNumber == "one":
+            if self.platforms != [] and self.enemies != []:
+                self.platforms.clear()
+                self.enemies.clear()
+                self.levelOnePlatforms()
+                self.levelOneEnemies()
+                self.player.resetPlayerLevelOne()
+        elif self.levelNumber == "two":
+            if self.platforms != [] and self.enemies != []:
+                self.platforms.clear()
+                self.enemies.clear()
+                self.levelTwoPlatforms()
         
         
     # Update method
     def updateLevel(self):
+        if self.levelNumber == "one":
+            if self.platforms == []:
+                self.levelOnePlatforms()
+                self.levelOneEnemies()
+        
+        if self.levelNumber == "two":
+            if self.platforms == []:
+                self.levelTwoPlatforms()
+
+        if self.player.health <= 0:
+            self.restartLevel()
+            
         self.player.update(self.platforms, self.enemies, self)
         
         
@@ -270,7 +293,7 @@ class LevelOne():
 
         pygame.draw.rect(screen, BLUE, [150 - offsetX, self.groundY - 1500 - offsetY, 100, 150])
     
-    def drawLevelOne(self, screen):
+    def drawLevel(self, screen):
         self.drawExit(screen)
         
         for i in range(len(self.platforms)):
@@ -293,10 +316,7 @@ def main():
     
     player = Player(100, 720, 30, 30, 0, 0, 0, 0, 100)
 
-    levelOne = LevelOne(player, [], [], 750, -850, 1600, False)
-
-    levelOne.levelOnePlatforms()
-    levelOne.levelOneEnemies()
+    level = Level(player, [], [], 750, -850, 1600, "one")
     
     # Loop
     done = False
@@ -307,21 +327,23 @@ def main():
             # Player movement 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
-                    levelOne.player.goLeft()
+                    level.player.goLeft()
                 elif event.key == pygame.K_d:
-                    levelOne.player.goRight()
+                    level.player.goRight()
                 elif event.key == pygame.K_SPACE:
-                    levelOne.player.jump()    
+                    level.player.jump()    
             # Stop player
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
-                    levelOne.player.hzStop()
+                    level.player.hzStop()
+    
+        # Logic
+        level.updateLevel()
         
-        levelOne.updateLevel()
         # Drawing
         screen.fill(WHITE)
 
-        levelOne.drawLevelOne(screen)
+        level.drawLevel(screen)
 
         pygame.display.flip()
         clock.tick(60)
