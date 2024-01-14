@@ -1,4 +1,6 @@
 import pygame
+import math
+import random
 
 # To Do List
 # - Work on levels
@@ -25,9 +27,18 @@ SCREENHEIGHT = 800
 def rectCollide(rect1, rect2):
     return rect1.x < rect2.x + rect2.width and rect1.y < rect2.y + rect2.height and rect1.x + rect1.width > rect2.x and rect1.y + rect1.height > rect2.y
 
+def belowCollide(rect1, rect2):
+    return rect1.y < rect2.y + rect2.height + 1 and rect1.x < rect2.x + rect2.width and rect1.x + rect1.width > rect2.x and rect1.y + rect1.height > rect2.y
+
 def checkCollision(object1, object2):
     for i in range(len(object1)):
         if rectCollide(object1[i], object2):
+            return i
+    return -1
+
+def checkBelow(object1, object2):
+    for i in range(len(object1)):
+        if belowCollide(object1[i], object2):
             return i
     return -1
 
@@ -48,7 +59,7 @@ def distance_calc(player):
 # To do
 # - Create Enemy Class
 class Enemy():
-    def __init__(self, x, y, width, height, xChange, yChange, health):
+    def __init__(self, x, y, width, height, xChange, yChange, health, walking, walkingTimer):
         self.x = x
         self.y = y
         self.width = width
@@ -56,18 +67,78 @@ class Enemy():
         self.xChange = xChange
         self.yChange = yChange
         self.health = health
-    
+        self.walking = walking
+        self.walkingTimer = walkingTimer
+
     def goLeft(self):
         self.xChange = -3
         
     def goRight(self):
         self.xChange = 3
     
+    def vtDefault(self):
+        self.yChange = 0.1
+
+    def horizontalCollision(self, platforms):
+        platformIndex = checkCollision(platforms, self)
+        if platformIndex != -1:
+            if self.xChange > 0:
+                self.x = platforms[platformIndex].x - self.width
+            elif self.xChange < 0:
+                self.x = platforms[platformIndex].x + platforms[platformIndex].width
+
+    def verticalCollision(self, platforms):
+        platformIndex = checkCollision(platforms, self)
+        if platformIndex != -1:
+            if self.yChange > 0:
+                self.y = platforms[platformIndex].y - self.height
+                self.vtDefault()
+            elif self.yChange < 0:
+                self.y= platforms[platformIndex].y + platforms[platformIndex].height
+                self.vtDefault()
+
+    def stopWalkingAtLedge(self, platforms):
+        platformIndex = checkBelow(platforms, self)
+        print(platformIndex)
+        if platformIndex != -1:
+            if self.x + self.width > platforms[platformIndex].x + platforms[platformIndex].width:
+                self.x = platforms[platformIndex].x + platforms[platformIndex].width - self.width
+            elif self.x < platforms[platformIndex].x:
+                self.x = platforms[platformIndex].x
+
+
+
+    def randomWalking(self):
+        randNum = random.random()
+        if self.walking == True:
+            self.walkingTimer = max(0, self.walkingTimer - 1)
+            if self.walkingTimer <= 0:
+                self.walking == False
+        elif randNum < 0.01:
+            self.goLeft()
+            self.walkingTimer = random.randint(30, 120)
+        elif randNum > 0.99:
+            self.goRight()
+            self.walkingTimer = random.randint(30, 120)
+    
+    def update(self, platforms):
+        self.yChange = min(5, self.yChange + 0.2)
+        
+        self.randomWalking()
+        
+        self.x += self.xChange
+        self.horizontalCollision(platforms)
+        
+        self.y += self.yChange
+        self.verticalCollision(platforms)
+        
+        self.stopWalkingAtLedge(platforms)
+    
     def drawEnemy(self, screen, player):
         pygame.draw.rect(screen, RED, [self.x - player.view[0], self.y - player.view[1], self.width, self.height])
 
-
 class Player():
+
     def __init__(self, x, y, width, height, xChange, yChange, view, jumpCount, health):
         self.x = x
         self.y = y
@@ -244,8 +315,8 @@ class Level():
 
     # Enemies
     def levelOneEnemies(self):
-        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15))
-        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 15))
+        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15, False, 0))
+        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 15, False, 0))
     
     def restartLevel(self):
         if self.levelNumber == "one":
@@ -277,6 +348,9 @@ class Level():
             self.restartLevel()
             
         self.player.update(self.platforms, self.enemies, self)
+        
+        for i in range(len(self.enemies)):
+            self.enemies[i].update(self.platforms)
         
         
     # Drawing Methods
