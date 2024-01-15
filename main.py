@@ -210,24 +210,20 @@ class Player():
             self.dashDuration -= 1
     
     def dash(self):
-        if self.xChange > 0 and self.dashCooldown == 0:
-            self.xChange = 9
-            self.dashCount = 0
-            self.dashDuration = 20
-            self.dashCooldown = 20
-            self.dashTimer()
-        elif self.xChange < 0 and self.dashCooldown == 0:
-            self.xChange = -9
-            self.dashCount = 0
-            self.dashDuration = 20
-            self.dashCooldown = 20
-            self.dashTimer()
+        if self.xChange > 0 and self.dashCooldown > 120:
+            self.xChange = 8
+            self.dashDuration = 30
+            self.dashCooldown = 0
+        elif self.xChange < 0 and self.dashCooldown > 120:
+            self.xChange = -8
+            self.dashDuration = 30
+            self.dashCooldown = 0
     
     def dashStop(self):
         if self.xChange > 0 and self.dashDuration == 0:
-            self.goRight()
+            self.xChange = 3
         elif self.xChange < 0 and self.dashDuration == 0:
-            self.goLeft()
+            self.xChange = -3
        
 
     def goLeft(self):
@@ -296,12 +292,17 @@ class Player():
         self.checkEnemyCollision(enemy)
         self.y += self.yChange
         self.checkVerticalPlatformCollision(platforms)
+        
+        self.dashCooldown += 1
+        if self.dashDuration > 0:
+            self.dashDuration -= 1
+
+        if self.dashDuration == 0:
+            self.dashStop()
 
         viewX = self.x - SCREENWIDTH / 2
         viewY = self.y - SCREENHEIGHT / 2
         self.view = [viewX, viewY]
-
-        self.dashStop()
         
         self.checkPlayerEdgeCollision(level)
         self.viewHorizontalEdge(level)
@@ -495,8 +496,7 @@ def main():
     size = (SCREENWIDTH, SCREENHEIGHT)
     screen = pygame.display.set_mode(size)
 
-    clock = pygame.time.Clock()
-    frameCount = 0
+    clock = pygame.time.Clock() 
     
     player = Player(100, 760, 30, 30, 0, 0, 0, 1, 0, 0, 100)
 
@@ -518,6 +518,8 @@ def main():
                     level.player.jump()    
                 elif event.key == pygame.K_LSHIFT:
                     level.player.dash()
+                        
+
             # Stop player
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
@@ -536,7 +538,7 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
-        frameCount += 1
+        print(level.player.dashDuration)
 
     pygame.quit()
 
