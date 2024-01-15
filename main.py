@@ -150,10 +150,10 @@ class Enemy():
                 self.walking == False
         elif randNum < 0.01:
             self.goLeft()
-            self.walkingTimer = random.randint(30, 120)
+            self.walkingTimer = random.randint(30, 90)
         elif randNum > 0.99:
             self.goRight()
-            self.walkingTimer = random.randint(30, 120)
+            self.walkingTimer = random.randint(30, 90)
 
     def checkEnemyHealth(self, level):
         if self.health <= 0:
