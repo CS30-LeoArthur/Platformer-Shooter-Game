@@ -49,12 +49,20 @@ def mouse_position():
     mouse_y = pos[1]
     return mouse_x, mouse_y
 
-def distance_calc(player):
-    run = mouse_position()[0] - (player.x + player.width / 2)
-    rise = mouse_position()[1] - (player.y + player.height / 2)
+def distanceCalc(player):
+    run = mouse_position()[0] - (player.x + player.width / 2 - player.view[0])
+    rise = mouse_position()[1] - (player.y + player.height / 2 - player.view[1])
     distance = math.sqrt(run**2 + rise**2)
     dx = player.x + player.width / 2 + (run * 20 / distance)
     dy = player.y + player.height / 2 + (rise * 20 / distance)
+    return dx, dy
+
+def distanceCalcBullets(player):
+    run = mouse_position()[0] - (player.x + player.width / 2 - player.view[0])
+    rise = mouse_position()[1] - (player.y + player.height / 2 - player.view[1])
+    distance = math.sqrt(run**2 + rise**2)
+    dx = run * 5 / distance
+    dy = rise * 5 / distance
     return dx, dy
 
 class Bullet():
@@ -334,7 +342,8 @@ class Player():
         offsetY = self.view[1]
 
         pygame.draw.rect(screen, BLUE, [self.x - offsetX, self.y - offsetY, self.width, self.height])
-        pygame.draw.line(screen, GREY, [(self.x + self.width / 2) - offsetX, (self.y + self.height / 2) - offsetY], [distance_calc(self)[0] - offsetX, distance_calc(self)[1] - offsetY], 11)
+        
+        pygame.draw.line(screen, GREY, [(self.x + self.width / 2) - offsetX, (self.y + self.height / 2) - offsetY], [distanceCalc(self)[0] - offsetX, distanceCalc(self)[1] - offsetY], 11)
 
         self.drawHealthBar(screen)
 
@@ -359,7 +368,6 @@ class Exit():
         if rectCollide(self, player):
             level.levelNumber += 1
             level.restartLevel()
-            print(level.levelNumber)
     
     def drawExit(self, screen, player):
         pygame.draw.rect(screen, BLACK, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
@@ -423,12 +431,12 @@ class Level():
         self.exit.append(Exit(150, self.groundY - 1500, 100, 150))
     
     def bulletVector(self):
-        bulletSpeedX = distance_calc(self.player)[0]
-        bulletSpeedY = distance_calc(self.player)[1]
+        bulletSpeedX = distanceCalcBullets(self.player)[0]
+        bulletSpeedY = distanceCalcBullets(self.player)[1]
         return bulletSpeedX, bulletSpeedY
 
     def createBullet(self):
-        self.bullets.append(Bullet(self.player.x + self.player.width / 2, self.player.y + self.player.height / 2, 10, 10, 5, 0))
+        self.bullets.append(Bullet(self.player.x + self.player.width / 2, self.player.y + self.player.height / 2, 10, 10, self.bulletVector()[0], self.bulletVector()[1]))
     
     def restartLevel(self):
         if self.levelNumber == 1:
@@ -464,15 +472,15 @@ class Level():
         self.player.update(self.platforms, self.enemies, self)
         self.exit[0].checkExitCollide(self.player, self)
         
-        for i in range(len(self.enemies)):
+        for i, e in reversed(list(enumerate(self.enemies))):
             self.enemies[i].update(self.platforms, self)
         
         for i in range(len(self.bullets)):
             self.bullets[i].update()
         
-        for i in range(len(self.bullets)):
+        for i, e in reversed(list(enumerate(self.bullets))):
             self.bullets[i].checkBulletCollision(self.platforms, self.enemies, self)
-            break
+            
     
     def drawLevel(self, screen):
         for i in range(len(self.platforms)):
@@ -518,8 +526,6 @@ def main():
                     level.player.jump()    
                 elif event.key == pygame.K_LSHIFT:
                     level.player.dash()
-                        
-
             # Stop player
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
@@ -538,7 +544,6 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
-        print(level.player.dashDuration)
 
     pygame.quit()
 
