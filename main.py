@@ -30,6 +30,7 @@ def rectCollide(rect1, rect2):
 def belowCollide(rect1, rect2):
     return rect1.y < rect2.y + rect2.height + 1 and rect1.x < rect2.x + rect2.width and rect1.x + rect1.width > rect2.x and rect1.y + rect1.height > rect2.y
 
+# With one list
 def checkCollision(object1, object2):
     for i in range(len(object1)):
         if rectCollide(object1[i], object2):
@@ -49,12 +50,48 @@ def mouse_position():
     return mouse_x, mouse_y
 
 def distance_calc(player):
-    run = mouse_position()[0] - player.x
-    rise = mouse_position()[1] - player.y
+    run = mouse_position()[0] - (player.x + player.width / 2)
+    rise = mouse_position()[1] - (player.y + player.height / 2)
     distance = math.sqrt(run**2 + rise**2)
-    dx = player.x + (run * player.radius / distance)
-    dy = player.y + (rise * player.radius / distance)
+    dx = player.x + player.width / 2 + (run * 20 / distance)
+    dy = player.y + player.height / 2 + (rise * 20 / distance)
     return dx, dy
+
+class Bullet():
+    def __init__(self, x, y, width, height, xChange, yChange):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.xChange = xChange
+        self.yChange = yChange
+
+    def platformCollision(self, platforms, level):
+        platformIndex = checkCollision(platforms, self)
+        if platformIndex != -1:
+            level.bullets.remove(self)
+            
+    
+    def enemyBulletCollision(self, enemies, level):
+        enemyIndex = checkCollision(enemies, self)
+        if enemyIndex != -1:
+            level.enemies[enemyIndex].health -= 5
+            level.bullets.remove(self)
+
+    
+    def update(self):
+        self.x += self.xChange
+        self.y += self.yChange
+    
+    def checkBulletCollision(self, platforms, enemies, level):
+        self.platformCollision(platforms, level)
+        self.enemyBulletCollision(enemies, level)
+    
+    def drawBullet(self, screen, player):
+        offsetX = player.view[0]
+        offsetY = player.view[1]
+
+        pygame.draw.ellipse(screen, YELLOW, [self.x - offsetX, self.y - offsetY, self.width, self.height])
 
 # To do
 # - Create Enemy Class
@@ -99,14 +136,11 @@ class Enemy():
 
     def stopWalkingAtLedge(self, platforms):
         platformIndex = checkBelow(platforms, self)
-        print(platformIndex)
         if platformIndex != -1:
             if self.x + self.width > platforms[platformIndex].x + platforms[platformIndex].width:
                 self.x = platforms[platformIndex].x + platforms[platformIndex].width - self.width
             elif self.x < platforms[platformIndex].x:
                 self.x = platforms[platformIndex].x
-
-
 
     def randomWalking(self):
         randNum = random.random()
@@ -120,8 +154,12 @@ class Enemy():
         elif randNum > 0.99:
             self.goRight()
             self.walkingTimer = random.randint(30, 120)
+
+    def checkEnemyHealth(self, level):
+        if self.health <= 0:
+            level.enemies.remove(self)
     
-    def update(self, platforms):
+    def update(self, platforms, level):
         self.yChange = min(5, self.yChange + 0.2)
         
         self.randomWalking()
@@ -133,13 +171,23 @@ class Enemy():
         self.verticalCollision(platforms)
         
         self.stopWalkingAtLedge(platforms)
+        self.checkEnemyHealth(level)
+    
+    def drawHealthBar(self, screen, player):
+        offsetX = player.view[0]
+        offsetY = player.view[1]
+        healthBarWidth = 40
+        pygame.draw.rect(screen, RED, [self.x - 10 - offsetX, self.y - 50 - offsetY, healthBarWidth, 10])
+        pygame.draw.rect(screen, GREEN, [self.x - 10 - offsetX, self.y - 50 - offsetY, self.health * 2, 10])
+        pygame.draw.rect(screen, BLACK, [self.x - 12 - offsetX, self.y - 52 - offsetY, healthBarWidth + 2, 14], 2)
     
     def drawEnemy(self, screen, player):
         pygame.draw.rect(screen, RED, [self.x - player.view[0], self.y - player.view[1], self.width, self.height])
+        self.drawHealthBar(screen, player)
 
 class Player():
 
-    def __init__(self, x, y, width, height, xChange, yChange, view, jumpCount, health):
+    def __init__(self, x, y, width, height, xChange, yChange, view, jumpCount, dashCooldown, dashDuration, health):
         self.x = x
         self.y = y
         self.width = width
@@ -148,12 +196,39 @@ class Player():
         self.yChange = yChange
         self.view = view
         self.jumpCount = jumpCount
+        self.dashCooldown = dashCooldown
+        self.dashDuration = dashDuration
         self.health = health
 
     def jump(self):
         if self.jumpCount > 0:
             self.yChange = -7
             self.jumpCount = 0
+    
+    def dashTimer(self):
+        if self.dashDuration > 0:
+            self.dashDuration -= 1
+    
+    def dash(self):
+        if self.xChange > 0 and self.dashCooldown == 0:
+            self.xChange = 9
+            self.dashCount = 0
+            self.dashDuration = 20
+            self.dashCooldown = 20
+            self.dashTimer()
+        elif self.xChange < 0 and self.dashCooldown == 0:
+            self.xChange = -9
+            self.dashCount = 0
+            self.dashDuration = 20
+            self.dashCooldown = 20
+            self.dashTimer()
+    
+    def dashStop(self):
+        if self.xChange > 0 and self.dashDuration == 0:
+            self.goRight()
+        elif self.xChange < 0 and self.dashDuration == 0:
+            self.goLeft()
+       
 
     def goLeft(self):
         self.xChange = -3
@@ -225,6 +300,8 @@ class Player():
         viewX = self.x - SCREENWIDTH / 2
         viewY = self.y - SCREENHEIGHT / 2
         self.view = [viewX, viewY]
+
+        self.dashStop()
         
         self.checkPlayerEdgeCollision(level)
         self.viewHorizontalEdge(level)
@@ -237,22 +314,26 @@ class Player():
         pygame.draw.rect(screen, GREEN, [0, SCREENHEIGHT - 50, healthBar, 50])
         pygame.draw.rect(screen, BLACK, [0, SCREENHEIGHT - 52, healthBarWidth, 52], 2)
 
-    def resetPlayerLevelOne(self):
-        self.x = 100
-        self.y = 720
-        self.health = 100
+    def resetPlayer(self, level):
+        if level.levelNumber == 1:
+            self.x = 100
+            self.y = 770
+            self.xChange = 0
+            self.yChange = 0
+            self.health = 100
+        elif level.levelNumber == 2:
+            self.x = 100
+            self.y = 770
+            self.xChange = 0
+            self.yChange = 0
+            self.health == 100
 
     def drawPlayer(self, screen):
         offsetX = self.view[0]
         offsetY = self.view[1]
 
         pygame.draw.rect(screen, BLUE, [self.x - offsetX, self.y - offsetY, self.width, self.height])
-        
-        pygame.draw.rect(screen, YELLOW, [self.x + self.width - offsetX, self.y - offsetY + self.height / 2.75, 10, 5])
-        
-        pygame.draw.rect(screen, YELLOW, [self.x + self.width + 10 - offsetX, self.y - offsetY, 5, 25])
-        
-        pygame.draw.rect(screen, LIGHTBLUE, [self.x + self.width + 15 - offsetX, self.y - offsetY + self.height / 3.25, 30, 10])
+        pygame.draw.line(screen, GREY, [(self.x + self.width / 2) - offsetX, (self.y + self.height / 2) - offsetY], [distance_calc(self)[0] - offsetX, distance_calc(self)[1] - offsetY], 11)
 
         self.drawHealthBar(screen)
 
@@ -266,11 +347,29 @@ class Platform():
     def drawPlatform(self, screen, player):
         pygame.draw.rect(screen, GREY, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
 
+class Exit():
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+    
+    def checkExitCollide(self, player, level):
+        if rectCollide(self, player):
+            level.levelNumber += 1
+            level.restartLevel()
+            print(level.levelNumber)
+    
+    def drawExit(self, screen, player):
+        pygame.draw.rect(screen, BLACK, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
+
 class Level():
-    def __init__(self, player, platforms, enemies, groundY, levelHeight, levelWidth, levelNumber):
+    def __init__(self, player, platforms, enemies, exit, bullets, groundY, levelHeight, levelWidth, levelNumber):
         self.player = player
         self.platforms = platforms
         self.enemies = enemies
+        self.exit = exit
+        self.bullets = bullets
         self.groundY = groundY
         self.levelHeight = levelHeight
         self.levelWidth = levelWidth
@@ -315,68 +414,78 @@ class Level():
 
     # Enemies
     def levelOneEnemies(self):
-        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 15, False, 0))
-        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 15, False, 0))
+        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 20, False, 0))
+
+    # Exit
+    def levelOneExit(self):
+        self.exit.append(Exit(150, self.groundY - 1500, 100, 150))
+    
+    def bulletVector(self):
+        bulletSpeedX = distance_calc(self.player)[0]
+        bulletSpeedY = distance_calc(self.player)[1]
+        return bulletSpeedX, bulletSpeedY
+
+    def createBullet(self):
+        self.bullets.append(Bullet(self.player.x + self.player.width / 2, self.player.y + self.player.height / 2, 10, 10, 5, 0))
     
     def restartLevel(self):
-        if self.levelNumber == "one":
+        if self.levelNumber == 1:
             if self.platforms != [] and self.enemies != []:
                 self.platforms.clear()
                 self.enemies.clear()
                 self.levelOnePlatforms()
                 self.levelOneEnemies()
-                self.player.resetPlayerLevelOne()
-        elif self.levelNumber == "two":
+                self.player.resetPlayer(self)
+        elif self.levelNumber == 2:
             if self.platforms != [] and self.enemies != []:
                 self.platforms.clear()
                 self.enemies.clear()
                 self.levelTwoPlatforms()
+                self.player.resetPlayer(self)
         
         
     # Update method
     def updateLevel(self):
-        if self.levelNumber == "one":
+        if self.levelNumber == 1:
             if self.platforms == []:
                 self.levelOnePlatforms()
                 self.levelOneEnemies()
+                self.levelOneExit()
         
-        if self.levelNumber == "two":
+        if self.levelNumber == 2:
             if self.platforms == []:
                 self.levelTwoPlatforms()
 
         if self.player.health <= 0:
             self.restartLevel()
-            
+
         self.player.update(self.platforms, self.enemies, self)
+        self.exit[0].checkExitCollide(self.player, self)
         
         for i in range(len(self.enemies)):
-            self.enemies[i].update(self.platforms)
+            self.enemies[i].update(self.platforms, self)
         
+        for i in range(len(self.bullets)):
+            self.bullets[i].update()
         
-    # Drawing Methods
-    
-    # def drawHouse(self, screen):
-    #     offsetX = self.player.view[0]
-    #     offsetY = self.player.view[1]
-    #     pygame.draw.rect(screen, BLUE, [500 - offsetX, 400 - offsetY, 300, self.groundY - 400], 10)
-    #     pygame.draw.polygon(screen, GREY, ([500 - offsetX, 400 - offsetY], [650 - offsetX, 300 - offsetY], [800 - offsetX, 400 - offsetY]))
-    
-    def drawExit(self, screen):
-        offsetX = self.player.view[0]
-        offsetY = self.player.view[1]
-
-        pygame.draw.rect(screen, BLUE, [150 - offsetX, self.groundY - 1500 - offsetY, 100, 150])
+        for i in range(len(self.bullets)):
+            self.bullets[i].checkBulletCollision(self.platforms, self.enemies, self)
+            break
     
     def drawLevel(self, screen):
-        self.drawExit(screen)
-        
         for i in range(len(self.platforms)):
             self.platforms[i].drawPlatform(screen, self.player)
         
         for i in range(len(self.enemies)):
             self.enemies[i].drawEnemy(screen, self.player)
 
+        for i in range(len(self.bullets)):
+            self.bullets[i].drawBullet(screen, self.player)
+
         self.player.drawPlayer(screen)
+
+        self.exit[0].drawExit(screen, self.player)
 
 
 
@@ -387,10 +496,11 @@ def main():
     screen = pygame.display.set_mode(size)
 
     clock = pygame.time.Clock()
+    frameCount = 0
     
-    player = Player(100, 720, 30, 30, 0, 0, 0, 0, 100)
+    player = Player(100, 760, 30, 30, 0, 0, 0, 1, 0, 0, 100)
 
-    level = Level(player, [], [], 750, -850, 1600, "one")
+    level = Level(player, [], [], [], [], 750, -850, 1600, 1)
     
     # Loop
     done = False
@@ -399,17 +509,22 @@ def main():
             if event.type == pygame.QUIT:
                 done = True
             # Player movement 
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
                     level.player.goLeft()
                 elif event.key == pygame.K_d:
                     level.player.goRight()
                 elif event.key == pygame.K_SPACE:
                     level.player.jump()    
+                elif event.key == pygame.K_LSHIFT:
+                    level.player.dash()
             # Stop player
-            if event.type == pygame.KEYUP:
+            elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_a and player.xChange < 0 or event.key == pygame.K_d and player.xChange > 0:
                     level.player.hzStop()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                level.createBullet()
+                
     
         # Logic
         level.updateLevel()
@@ -421,6 +536,7 @@ def main():
 
         pygame.display.flip()
         clock.tick(60)
+        frameCount += 1
 
     pygame.quit()
 
