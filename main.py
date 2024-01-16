@@ -218,11 +218,11 @@ class Player():
             self.dashDuration -= 1
     
     def dash(self):
-        if self.xChange > 0 and self.dashCooldown > 120:
+        if self.xChange > 0 and self.dashCooldown > 90:
             self.xChange = 8
             self.dashDuration = 30
             self.dashCooldown = 0
-        elif self.xChange < 0 and self.dashCooldown > 120:
+        elif self.xChange < 0 and self.dashCooldown > 90:
             self.xChange = -8
             self.dashDuration = 30
             self.dashCooldown = 0
@@ -293,6 +293,27 @@ class Player():
         if self.view[1] < level.levelHeight:
             self.view[1] = level.levelHeight
 
+    def resetPlayer(self, level):
+        if level.levelNumber == 1:
+            self.x = 100
+            self.y = 770
+            self.xChange = 0
+            self.yChange = 0
+            self.health = 100
+        elif level.levelNumber == 2:
+            self.x = 1500
+            self.y = 770
+            self.xChange = 0
+            self.yChange = 0
+            self.health = 100
+
+        elif level.levelNumber == 3:
+            self.x = 100
+            self.y = 770
+            self.xChange = 0
+            self.yChange = 0
+            self.health = 100
+
     def update(self, platforms, enemy, level):
         self.yChange = min(5, self.yChange + 0.2)
         self.x += self.xChange
@@ -322,20 +343,6 @@ class Player():
         pygame.draw.rect(screen, RED, [0, SCREENHEIGHT - 50, healthBarWidth, 50])
         pygame.draw.rect(screen, GREEN, [0, SCREENHEIGHT - 50, healthBar, 50])
         pygame.draw.rect(screen, BLACK, [0, SCREENHEIGHT - 52, healthBarWidth, 52], 2)
-
-    def resetPlayer(self, level):
-        if level.levelNumber == 1:
-            self.x = 100
-            self.y = 770
-            self.xChange = 0
-            self.yChange = 0
-            self.health = 100
-        elif level.levelNumber == 2:
-            self.x = 100
-            self.y = 770
-            self.xChange = 0
-            self.yChange = 0
-            self.health == 100
 
     def drawPlayer(self, screen):
         offsetX = self.view[0]
@@ -368,6 +375,7 @@ class Exit():
         if rectCollide(self, player):
             level.levelNumber += 1
             level.restartLevel()
+            
     
     def drawExit(self, screen, player):
         pygame.draw.rect(screen, BLACK, [self.x - player.view[0] , self.y - player.view[1], self.width, self.height])
@@ -390,7 +398,7 @@ class Level():
     
     # Platforms
     def levelOnePlatforms(self):
-        # Ground I think I will need a seperate class for the ground later because I want the player to drop through the platforms but not the ground
+        # Thick Platforms
         self.appendNewPlatform(0, self.groundY, self.levelWidth, 50)
         self.appendNewPlatform(700, self.groundY - 750, self.levelWidth - 700, 800)
         self.appendNewPlatform(0, self.groundY - 1350, 800, 450)
@@ -419,16 +427,94 @@ class Level():
         self.appendNewPlatform(0, self.levelHeight, self.levelWidth, 50)
 
     def levelTwoPlatforms(self):
+        self.appendNewPlatform(800, self.groundY - 800, 800, 650)
+        self.appendNewPlatform(500, self.groundY - 100, 100, 100)
+        self.appendNewPlatform(50, self.groundY - 150, 100, 150)
+        self.appendNewPlatform(50, self.groundY - 250, 50, 20)
+        self.appendNewPlatform(200, self.groundY - 300, 150, 20)
+        self.appendNewPlatform(450, self.groundY - 400, 150, 20)
+        self.appendNewPlatform(750, self.groundY - 500, 50, 20)
+        self.appendNewPlatform(50, self.levelHeight, 600, 1020)
+        self.appendNewPlatform(650, self.groundY - 600, 50, 20)
+        self.appendNewPlatform(750, self.groundY - 700, 50, 20)
+        self.appendNewPlatform(650, self.groundY - 800, 50, 20)
+        self.appendNewPlatform(1000, self.groundY - 900, 200, 20)
+        self.appendNewPlatform(1000, self.groundY - 1100, 200, 20)
+        self.appendNewPlatform(1000, self.groundY - 1300, 200, 20)
+        self.appendNewPlatform(650, self.groundY - 1000, 200, 20)
+        self.appendNewPlatform(1350, self.groundY - 1000, 200, 20)
+        self.appendNewPlatform(650, self.groundY - 1200, 200, 20)
+        self.appendNewPlatform(1350, self.groundY - 1200, 200, 20)
+        
         self.appendNewPlatform(0, self.groundY, self.levelWidth, 50)
+        self.appendNewPlatform(0, self.levelHeight, 50, 1600)
+        self.appendNewPlatform(0, self.levelHeight, self.levelWidth, 50)
+        self.appendNewPlatform(self.levelWidth - 50, self.levelHeight, 50, 1200)
+    
+    def levelThreePlatforms(self):
+        self.appendNewPlatform(700, self.groundY - 1200, 200, 1200)
+        self.appendNewPlatform(500, self.groundY - 100, 200, 20)
+        self.appendNewPlatform(50, self.groundY - 200, 200, 20)
+        self.appendNewPlatform(500, self.groundY - 300, 200, 20)
+        self.appendNewPlatform(50, self.groundY - 400, 200, 20)
+        self.appendNewPlatform(500, self.groundY - 500, 200, 20)
+        self.appendNewPlatform(50, self.groundY - 600, 200, 20)
+        self.appendNewPlatform(500, self.groundY - 700, 200, 20)
+        self.appendNewPlatform(50, self.groundY - 800, 200, 20)
+        self.appendNewPlatform(500, self.groundY - 900, 200, 20)
+        self.appendNewPlatform(50, self.groundY - 1000, 200, 20)
+        self.appendNewPlatform(500, self.groundY - 1100, 200, 20)
+        self.appendNewPlatform(900, self.groundY - 1200, 550, 50)
+        self.appendNewPlatform(1000, self.groundY - 1000, 550, 50)
+        self.appendNewPlatform(900, self.groundY - 800, 550, 50)
+        self.appendNewPlatform(1000, self.groundY - 600, 550, 50)
+        self.appendNewPlatform(900, self.groundY - 400, 550, 50)
+        self.appendNewPlatform(1000, self.groundY - 200, 550, 50)
+        
+        self.appendNewPlatform(0, self.groundY, self.levelWidth, 50)
+        self.appendNewPlatform(0, self.levelHeight, 50, 1600)
+        self.appendNewPlatform(0, self.levelHeight, self.levelWidth, 50)
+        self.appendNewPlatform(self.levelWidth - 50, self.levelHeight, 50, 1600)
 
     # Enemies
     def levelOneEnemies(self):
-        self.enemies.append(Enemy(100, self.groundY - 700 - 20, 20, 20, 0, 0, 20, False, 0))
-        self.enemies.append(Enemy(200, self.groundY - 20, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(100, self.groundY - 720, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(400, self.groundY - 20, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1200, self.groundY - 820, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1200, self.groundY - 1020, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1200, self.groundY - 1120, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1200, self.groundY - 1320, 20, 20, 0, 0, 20, False, 0))
+
+    def levelTwoEnemies(self):
+        self.enemies.append(Enemy(100, self.groundY - 20, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(500, self.groundY - 420, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1050, self.groundY - 1120, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1050, self.groundY - 820 , 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1050, self.groundY - 920, 20, 20, 0, 0, 20, False, 0))
+
+    def levelThreeEnemies(self):
+        self.enemies.append(Enemy(600, self.groundY - 120, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(100, self.groundY - 420, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(600, self.groundY - 720, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(100, self.groundY - 1020, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1100, self.groundY - 1020, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1100, self.groundY - 820, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1100, self.groundY - 620, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1100, self.groundY - 420, 20, 20, 0, 0, 20, False, 0))
+        self.enemies.append(Enemy(1100, self.groundY - 220, 20, 20, 0, 0, 20, False, 0))
 
     # Exit
+    def appendExits(self, exit):
+        self.exit.append(exit)
+        
     def levelOneExit(self):
-        self.exit.append(Exit(150, self.groundY - 1500, 100, 150))
+        self.appendExits(Exit(150, self.groundY - 1500, 100, 150))
+    
+    def levelTwoExit(self):
+        self.appendExits(Exit(1050, self.groundY - 1450, 100, 150))
+    
+    def levelThreeExit(self):
+        self.appendExits(Exit(1300, self.groundY - 150, 100, 150))
     
     def bulletVector(self):
         bulletSpeedX = distanceCalcBullets(self.player)[0]
@@ -443,15 +529,37 @@ class Level():
             if self.platforms != [] and self.enemies != []:
                 self.platforms.clear()
                 self.enemies.clear()
+                self.bullets.clear()
+                self.exit.clear()
                 self.levelOnePlatforms()
                 self.levelOneEnemies()
+                self.levelOneExit()
                 self.player.resetPlayer(self)
         elif self.levelNumber == 2:
             if self.platforms != [] and self.enemies != []:
                 self.platforms.clear()
                 self.enemies.clear()
+                self.bullets.clear()
+                self.exit.clear()
                 self.levelTwoPlatforms()
+                self.levelTwoEnemies()
+                self.levelTwoExit()
                 self.player.resetPlayer(self)
+        elif self.levelNumber == 3:
+            if self.platforms != [] and self.enemies != []:
+                self.platforms.clear()
+                self.enemies.clear()
+                self.bullets.clear()
+                self.exit.clear()
+                self.levelThreePlatforms()
+                self.levelThreeExit()
+                self.levelThreeEnemies()
+                self.player.resetPlayer(self)
+        
+    def endGame(self):
+        if self.levelNumber == 4:
+            print("YOU WIN!")
+            pygame.quit()
         
         
     # Update method
@@ -465,12 +573,22 @@ class Level():
         if self.levelNumber == 2:
             if self.platforms == []:
                 self.levelTwoPlatforms()
+                self.levelOneEnemies()
+                self.levelTwoExit()
+        
+        if self.levelNumber == 3:
+            if self.platforms == []:
+                self.levelThreePlatforms()
+                self.levelThreeExit()
+                self.levelThreeEnemies
 
         if self.player.health <= 0:
             self.restartLevel()
 
         self.player.update(self.platforms, self.enemies, self)
         self.exit[0].checkExitCollide(self.player, self)
+        
+        
         
         for i, e in reversed(list(enumerate(self.enemies))):
             self.enemies[i].update(self.platforms, self)
@@ -480,6 +598,8 @@ class Level():
         
         for i, e in reversed(list(enumerate(self.bullets))):
             self.bullets[i].checkBulletCollision(self.platforms, self.enemies, self)
+        
+        self.endGame()
             
     
     def drawLevel(self, screen):
@@ -492,21 +612,24 @@ class Level():
         for i in range(len(self.bullets)):
             self.bullets[i].drawBullet(screen, self.player)
 
-        self.player.drawPlayer(screen)
+        for i in range(len(self.exit)):
+            self.exit[i].drawExit(screen, self.player)
 
-        self.exit[0].drawExit(screen, self.player)
+        self.player.drawPlayer(screen)
 
 
 
 def main():
     pygame.init()
+
+    print("Use A and D to move left and right. Use space to jump. Click in the direction you want the player to shoot. Use shift to dash for a short duration, dash has a cooldown of 1.5 seconds. Beat all three levels to win the game. Have Fun!")
     
     size = (SCREENWIDTH, SCREENHEIGHT)
     screen = pygame.display.set_mode(size)
 
     clock = pygame.time.Clock() 
     
-    player = Player(100, 760, 30, 30, 0, 0, 0, 1, 0, 0, 100)
+    player = Player(100, -800, 30, 30, 0, 0, 0, 1, 0, 0, 100)
 
     level = Level(player, [], [], [], [], 750, -850, 1600, 1)
     
