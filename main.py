@@ -2,15 +2,6 @@ import pygame
 import math
 import random
 
-# To Do List
-# - Work on levels
-# - Player Movement Options
-# - Create a weapon for the player
-# - Power ups
-# - Create Enemy Class
-# - Create Platform Class
-# - Player Health Bar
-
 # Define Colors
 GREY = (128, 128, 128)
 RED = (255, 0, 0)
