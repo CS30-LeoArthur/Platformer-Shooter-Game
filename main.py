@@ -620,7 +620,7 @@ def main():
 
     clock = pygame.time.Clock() 
     
-    player = Player(100, -800, 30, 30, 0, 0, 0, 1, 0, 0, 100)
+    player = Player(100, 770, 30, 30, 0, 0, 0, 1, 0, 0, 100)
 
     level = Level(player, [], [], [], [], 750, -850, 1600, 1)
     
